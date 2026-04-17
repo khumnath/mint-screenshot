@@ -1,0 +1,7 @@
+{
+    "uuid": "mint-screenshot@antigravity",
+    "name": "Mint Screenshot",
+    "description": "Premium screenshot tool with window detection and annotations.",
+    "icon": "camera-photo-symbolic",
+    "max-instances": 1
+}
