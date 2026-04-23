@@ -8,20 +8,32 @@ function _(str) {
     return Gettext.dgettext("mint-screenshot", str);
 }
 
+const Settings = imports.ui.settings;
+
 class MintScreenshotApplet extends Applet.IconApplet {
     constructor(metadata, orientation, panel_height, instance_id) {
         super(orientation, panel_height, instance_id);
-        this.set_applet_icon_symbolic_name("camera-photo-symbolic");
-        this.set_applet_tooltip(_("Take a screenshot"));
-        global.log("Mint Screenshot: Applet initialized");
+        this.metadata = metadata;
+        this.set_applet_icon_symbolic_name("applets-screenshooter-symbolic");
+        this.set_applet_tooltip(_("Mint Screenshot — Click to capture"));
+
+        this.settings = new Settings.AppletSettings(this, metadata.uuid, instance_id);
+        this.settings.bind("default-save-directory", "save_directory");
     }
 
     _takeScreenshot() {
-        global.log("Mint Screenshot: Triggering capture...");
-        let pythonScript = GLib.get_home_dir() + "/projects/mint-screenshot/main.py";
-        // Use full path to python3 and redirect output to a log file for debugging
-        let command = `python3 "${pythonScript}" > /tmp/mint-screenshot.log 2>&1`;
-        Util.spawnCommandLine(command);
+        let pythonScript = GLib.build_filenamev([this.metadata.path, "main.py"]);
+
+        // Resolve the save directory, respecting the user's locale for ~/Pictures
+        let picturesDir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES) || GLib.get_home_dir();
+        let defaultSaveDir = GLib.build_filenamev([picturesDir, "Screenshots"]);
+
+        let saveDir = this.save_directory || defaultSaveDir;
+        if (saveDir.startsWith("~")) {
+            saveDir = saveDir.replace("~", GLib.get_home_dir());
+        }
+
+        Util.spawn(["python3", pythonScript, saveDir]);
     }
 
     on_applet_clicked(event) {

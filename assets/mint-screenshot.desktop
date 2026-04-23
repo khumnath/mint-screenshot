@@ -1,0 +1,20 @@
+[Desktop Entry]
+Name=Mint Screenshot
+Name[ne]=मिन्ट स्क्रिनसट
+Name[zh_CN]=Mint 截图
+Name[fr]=Mint Screenshot
+Comment=Screenshot & Annotation Tool
+Comment[ne]=सजिलै स्क्रिनसट क्याप्चर र एनोटेट गर्नुहोस्
+Comment[zh_CN]=轻松截图和标注
+Comment[fr]=Capturez et annotez facilement
+Exec=PROJECT_PATH/main.py
+Icon=PROJECT_PATH/assets/mint-screenshot.png
+Terminal=false
+Type=Application
+Categories=Utility;Graphics;
+Keywords=screenshot;capture;snip;
+Keywords[ne]=स्क्रिनसट;क्याप्चर;स्निप;
+Keywords[zh_CN]=截图;捕获;剪辑;
+Keywords[fr]=capture;écran;snip;
+StartupNotify=true
+StartupWMClass=mint-screenshot

@@ -1,0 +1,18 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/__pyrefly_virtual__/**"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "."
+    }
+  ],
+  "reportMissingImports": "none",
+  "reportGeneralTypeIssues": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportOptionalMemberAccess": "none"
+}

@@ -1,398 +1,203 @@
 #!/usr/bin/env python3
 import sys
 import os
-import math
+import json
+import time
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('Wnck', '3.0')
-gi.require_version('PangoCairo', '1.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf, Wnck, GLib, Pango, PangoCairo
-import cairo
+from gi.repository import Gtk
+from config import IS_WAYLAND, APPLET_DIR, _
+from app import ScreenshotOverlay
 
-class AppState:
-    SELECTING = 1
-    ANNOTATING = 2
 
-class Annotation:
-    def __init__(self, type, start, end, color=(1,0,0), width=2, text=""):
-        self.type = type # 'rect', 'arrow', 'text', 'ellipse'
-        self.start = start # (x, y)
-        self.end = end # (x, y)
-        self.color = color
-        self.width = width
-        self.text = text
+# --- Bootstrap ---
 
-class ScreenshotOverlay(Gtk.Window):
-    def __init__(self, screenshot_path=None):
-        super().__init__(type=Gtk.WindowType.TOPLEVEL)
-        self.screenshot_path = screenshot_path
+def _check_dependencies(force=False):
+    """Verify required system packages. Caches the result to skip on future starts."""
+    config_path = os.path.expanduser("~/.config/mint-screenshot-deps.json")
+    config = {}
+    if os.path.exists(config_path):
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+        except Exception: pass
+
+    if config.get('deps_ok') and not force:
+        return True
+
+    missing = []
+    
+    try:
+        import gi
+    except ImportError:
+        missing.append(("gi", "Python GObject Introspection"))
         
-        # Window setup
-        self.set_app_paintable(True)
-        self.set_decorated(False)
-        self.set_keep_above(True)
+    try:
+        import cairo
+    except ImportError:
+        missing.append(("cairo", "Python Cairo library"))
         
-        # Enable transparency
-        screen = self.get_screen()
-        visual = screen.get_rgba_visual()
-        if visual:
-            self.set_visual(visual)
-
-        # Monitor and Scale Detection
-        display = Gdk.Display.get_default()
-        monitor = display.get_primary_monitor()
-        geom = monitor.get_geometry()
-        self.width = geom.width
-        self.height = geom.height
-
-        # BACKGROUND CAPTURE (Immediate)
-        window = Gdk.get_default_root_window()
-        # Capture RAW pixels (e.g. 2880x1800)
-        self.full_pixbuf = Gdk.pixbuf_get_from_window(window, geom.x, geom.y, window.get_width(), window.get_height())
-        self.scale = self.get_scale_factor()
-
-        # Target the primary monitor
-        self.set_type_hint(Gdk.WindowTypeHint.UTILITY)
-        self.fullscreen_on_monitor(screen, 0)
-
-        # State
-        self.state = AppState.SELECTING
-        self.selection_start = None
-        self.selection_end = None
-        self.rect = None # (x, y, w, h)
+    try:
+        import gi
+        gi.require_foreign("cairo")
+    except Exception:
+        missing.append(("gi-cairo", "Python GObject Cairo bindings"))
         
-        # Window detection
-        self.windows = self._get_windows()
-        self.hovered_window = None
+    try:
+        from PIL import Image
+    except ImportError:
+        missing.append(("pil", "Pillow (Icon Processing)"))
 
-        # Annotation State
-        self.annotations = []
-        self.current_ann = None
-        self.current_tool = 'rect' # 'rect', 'arrow', 'text', 'ellipse'
-        self.current_color = (1.0, 0.0, 0.0) # Red
-        self.line_width = 3
+    if IS_WAYLAND:
+        try:
+            import dbus
+        except ImportError:
+            missing.append(("dbus", "D-Bus Python (Wayland portal support)"))
+    else:
+        try:
+            import gi
+            gi.require_version('Wnck', '3.0')
+            from gi.repository import Wnck
+        except (ImportError, ValueError):
+            missing.append(("wnck", "Wnck (X11 window detection)"))
 
-        # Toolbar
-        self.toolbar = None
-
-        # Signals
-        self.connect("draw", self.on_draw)
-        self.connect("button-press-event", self.on_button_press)
-        self.connect("button-release-event", self.on_button_release)
-        self.connect("motion-notify-event", self.on_motion_notify)
-        self.connect("key-press-event", self.on_key_press)
+    if missing:
+        import shutil
+        pkg_manager = "unknown"
+        install_cmd = ""
         
-        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK |
-                        Gdk.EventMask.BUTTON_RELEASE_MASK |
-                        Gdk.EventMask.POINTER_MOTION_MASK |
-                        Gdk.EventMask.KEY_PRESS_MASK)
-
-        self.show_all()
-
-    def _get_windows(self):
-        screen = Wnck.Screen.get_default()
-        screen.force_update()
-        windows = []
-        for window in screen.get_windows():
-            if window.get_window_type() == Wnck.WindowType.NORMAL:
-                x, y, w, h = window.get_geometry()
-                x = max(0, x); y = max(0, y)
-                w = min(self.width - x, w); h = min(self.height - y, h)
-                if w > 0 and h > 0:
-                    windows.append({'rect': (x, y, w, h)})
-        return windows
-
-    def on_draw(self, widget, cr):
-        allocation = widget.get_allocation()
-        
-        # Always draw the frozen background
-        cr.set_source_rgb(0, 0, 0)
-        cr.paint()
-        
-        if self.full_pixbuf:
-            # Create a HiDPI-aware surface from the raw pixbuf
-            # We scale the image by the monitor's scale factor
-            surface = Gdk.cairo_surface_create_from_pixbuf(self.full_pixbuf, self.scale, self.get_window())
-            cr.set_source_surface(surface, 0, 0)
-            cr.paint()
-
-        if self.state == AppState.SELECTING:
-            # Dim the whole screen
-            cr.set_source_rgba(0, 0, 0, 0.4)
-            cr.paint()
-
-            # Instructions
-            cr.set_source_rgba(0, 0, 0, 0.8)
-            cr.rectangle(0, 0, allocation.width, 40)
-            cr.fill()
-            cr.set_source_rgb(1, 1, 1)
-            layout = self.create_pango_layout("Drag to select area | Click to select window | ESC to cancel")
-            cr.move_to(20, 10)
-            PangoCairo.show_layout(cr, layout)
-
-            target_rect = None
-            if self.selection_start and self.selection_end:
-                target_rect = self._get_rect(self.selection_start, self.selection_end)
-            elif self.hovered_window:
-                target_rect = self.hovered_window['rect']
-                
-            if target_rect:
-                x, y, w, h = target_rect
-                # Reveal area
-                cr.save()
-                cr.set_operator(cairo.Operator.CLEAR)
-                cr.rectangle(x, y, w, h)
-                cr.fill()
-                cr.restore()
-                
-                # Redraw area from background surface
-                cr.save()
-                cr.rectangle(x, y, w, h)
-                cr.clip()
-                cr.set_source_surface(surface, 0, 0)
-                cr.paint()
-                cr.restore()
-                
-                # Highlight Border
-                cr.set_source_rgb(0, 0.6, 1.0)
-                cr.set_line_width(2)
-                cr.rectangle(x, y, w, h)
-                cr.stroke()
-        
-        elif self.state == AppState.ANNOTATING:
-            x, y, w, h = self.rect
-            # Dim outside
-            cr.save()
-            cr.set_fill_rule(cairo.FillRule.EVEN_ODD)
-            cr.set_source_rgba(0, 0, 0, 0.4)
-            cr.rectangle(0, 0, allocation.width, allocation.height)
-            cr.rectangle(x, y, w, h)
-            cr.fill()
-            cr.restore()
+        try:
+            if shutil.which("apt"):
+                pkg_manager = "apt"
+                install_cmd = "sudo apt install"
+            elif shutil.which("pacman"):
+                pkg_manager = "pacman"
+                install_cmd = "sudo pacman -S"
+            elif shutil.which("dnf"):
+                pkg_manager = "dnf"
+                install_cmd = "sudo dnf install"
+            elif shutil.which("zypper"):
+                pkg_manager = "zypper"
+                install_cmd = "sudo zypper install"
+        except Exception:
+            pass
             
-            # Border
-            cr.set_source_rgb(0, 0.6, 1.0)
-            cr.set_line_width(1)
-            cr.rectangle(x, y, w, h)
-            cr.stroke()
-
-            # Draw existing annotations
-            for ann in self.annotations:
-                self._draw_annotation(cr, ann)
-            
-            # Draw current annotation
-            if self.current_ann:
-                self._draw_annotation(cr, self.current_ann)
-
-    def _get_rect(self, start, end):
-        x1, y1 = start; x2, y2 = end
-        return min(x1, x2), min(y1, y2), abs(x1 - x2), abs(y1 - y2)
-
-    def _draw_selection_area(self, cr, x, y, w, h):
-        cr.save()
-        # Create a "hole" in the current drawing (which is already dimmed)
-        cr.set_operator(cairo.Operator.CLEAR)
-        cr.rectangle(x, y, w, h)
-        cr.fill()
-        cr.restore()
-        
-        cr.save()
-        # Clip to selection area
-        cr.rectangle(x, y, w, h)
-        cr.clip()
-        
-        # Pixbuf is now 1:1 logical size
-        Gdk.cairo_set_source_pixbuf(cr, self.pixbuf, 0, 0)
-        cr.paint()
-        cr.restore()
-
-        # Border
-        cr.set_source_rgb(0, 0.6, 1.0)
-        cr.set_line_width(2)
-        cr.rectangle(x, y, w, h)
-        cr.stroke()
-
-    def _draw_annotation(self, cr, ann):
-        cr.set_source_rgb(*ann.color)
-        cr.set_line_width(ann.width)
-        x1, y1 = ann.start; x2, y2 = ann.end
-        
-        if ann.type == 'rect':
-            cr.rectangle(min(x1, x2), min(y1, y2), abs(x1 - x2), abs(y1 - y2))
-            cr.stroke()
-        elif ann.type == 'arrow':
-            self._draw_arrow(cr, x1, y1, x2, y2)
-        elif ann.type == 'ellipse':
-            cr.save()
-            cr.translate(min(x1, x2) + abs(x1-x2)/2, min(y1, y2) + abs(y1-y2)/2)
-            cr.scale(abs(x1-x2)/2, abs(y1-y2)/2)
-            cr.arc(0, 0, 1, 0, 2*3.14159)
-            cr.restore()
-            cr.stroke()
-
-    def _draw_arrow(self, cr, x1, y1, x2, y2):
-        import math
-        angle = math.atan2(y2 - y1, x2 - x1)
-        length = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-        arrow_size = 15
-        
-        cr.move_to(x1, y1)
-        cr.line_to(x2, y2)
-        cr.stroke()
-        
-        cr.save()
-        cr.translate(x2, y2)
-        cr.rotate(angle)
-        cr.move_to(0, 0)
-        cr.line_to(-arrow_size, arrow_size/2)
-        cr.line_to(-arrow_size, -arrow_size/2)
-        cr.close_path()
-        cr.fill()
-        cr.restore()
-
-    def on_button_press(self, widget, event):
-        if event.button == 1:
-            if event.type == Gdk.EventType.DOUBLE_BUTTON_PRESS:
-                self.rect = (0, 0, self.width, self.height)
-                self.state = AppState.ANNOTATING
-                self._show_toolbar()
-                self.queue_draw()
-                return
-            
-            if self.state == AppState.SELECTING:
-                self.selection_start = (event.x, event.y)
-            elif self.state == AppState.ANNOTATING:
-                self.current_ann = Annotation(self.current_tool, (event.x, event.y), (event.x, event.y), self.current_color, self.line_width)
-
-    def on_button_release(self, widget, event):
-        if event.button == 1:
-            if self.state == AppState.SELECTING:
-                if self.selection_start:
-                    x, y, w, h = self._get_rect(self.selection_start, (event.x, event.y))
-                    if w < 5 and h < 5 and self.hovered_window:
-                        self.rect = self.hovered_window['rect']
-                    else:
-                        self.rect = (x, y, w, h)
-                
-                if self.rect and self.rect[2] > 5 and self.rect[3] > 5:
-                    self.state = AppState.ANNOTATING
-                    self._show_toolbar()
-                self.selection_start = None
-                self.queue_draw()
-            elif self.state == AppState.ANNOTATING:
-                if self.current_ann:
-                    self.annotations.append(self.current_ann)
-                    self.current_ann = None
-                    self.queue_draw()
-
-    def on_motion_notify(self, widget, event):
-        if self.state == AppState.SELECTING:
-            if self.selection_start:
-                self.selection_end = (event.x, event.y)
-            else:
-                self.hovered_window = None
-                for win in reversed(self.windows):
-                    x, y, w, h = win['rect']
-                    if x <= event.x <= x + w and y <= event.y <= y + h:
-                        self.hovered_window = win
-                        break
-        elif self.state == AppState.ANNOTATING:
-            if self.current_ann:
-                self.current_ann.end = (event.x, event.y)
-        self.queue_draw()
-
-    def _show_toolbar(self):
-        if self.toolbar: self.toolbar.destroy()
-        self.toolbar = Gtk.Window(type=Gtk.WindowType.POPUP)
-        self.toolbar.set_keep_above(True)
-        
-        # Apply CSS for premium look
-        style_provider = Gtk.CssProvider()
-        style_provider.load_from_data(b"""
-            #toolbar { 
-                background: rgba(40, 40, 40, 0.9); 
-                border-radius: 8px; 
-                padding: 4px;
-                border: 1px solid rgba(255,255,255,0.1);
+        pkg_map = {
+            "apt": {
+                "gi": "python3-gi", "cairo": "python3-cairo", "gi-cairo": "python3-gi-cairo", 
+                "dbus": "python3-dbus", "wnck": "gir1.2-wnck-3.0"
+            },
+            "pacman": {
+                "gi": "python-gobject", "cairo": "python-cairo", "gi-cairo": "python-gobject", 
+                "dbus": "python-dbus", "wnck": "libwnck3"
+            },
+            "dnf": {
+                "gi": "python3-gobject", "cairo": "python3-cairo", "gi-cairo": "python3-gobject", 
+                "dbus": "python3-dbus", "wnck": "libwnck3"
+            },
+            "zypper": {
+                "gi": "python3-gobject", "cairo": "python3-cairo", "gi-cairo": "python3-gobject", 
+                "dbus": "python3-dbus", "wnck": "typelib-1_0-Wnck-3_0"
             }
-            button { background: transparent; border: none; padding: 8px; color: white; }
-            button:hover { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        """)
-        Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        box.set_name("toolbar")
+        }
         
-        tools = [('rect', 'draw-rectangle-symbolic', 'Rectangle'), 
-                 ('ellipse', 'draw-ellipse-symbolic', 'Ellipse'), 
-                 ('arrow', 'draw-arrow-forward-symbolic', 'Arrow')]
+        suggested_pkgs = set()
+        pkg_list_str = []
         
-        for tool, icon, label in tools:
-            btn = Gtk.Button.new_from_icon_name(icon, Gtk.IconSize.BUTTON)
-            btn.set_tooltip_text(label)
-            btn.connect("clicked", lambda b, t=tool: self._set_tool(t))
-            box.add(btn)
+        lookup_manager = pkg_manager if pkg_manager != "unknown" else "apt"
         
-        # Save button
-        save_btn = Gtk.Button.new_from_icon_name("document-save-symbolic", Gtk.IconSize.BUTTON)
-        save_btn.set_tooltip_text("Save and Copy (Enter)")
-        save_btn.connect("clicked", lambda b: self._save_screenshot())
-        box.add(save_btn)
-        
-        # Close button
-        close_btn = Gtk.Button.new_from_icon_name("window-close-symbolic", Gtk.IconSize.BUTTON)
-        close_btn.connect("clicked", lambda b: Gtk.main_quit())
-        box.add(close_btn)
-
-        self.toolbar.add(box)
-        
-        # Position toolbar at the top of the screen, centered
-        toolbar_y = 10
-        toolbar_x = (self.width / 2) - 100
-        toolbar_x = max(10, min(self.width - 210, toolbar_x))
-        
-        self.toolbar.move(int(toolbar_x), int(toolbar_y))
-        self.toolbar.show_all()
-
-    def _set_tool(self, tool):
-        self.current_tool = tool
-
-    def on_key_press(self, widget, event):
-        if event.keyval == Gdk.KEY_Escape:
-            Gtk.main_quit()
-        elif event.keyval == Gdk.KEY_z and (event.state & Gdk.ModifierType.CONTROL_MASK):
-            if self.annotations:
-                self.annotations.pop()
-                self.queue_draw()
-
-    def _save_screenshot(self):
-        x, y, w, h = self.rect
-        # Save at device pixel resolution is not needed here as full_pixbuf is already logical size
-        # Or should we use raw?
-        # Let's keep it consistent with full_pixbuf.
-        
-        surface = cairo.ImageSurface(cairo.Format.ARGB32, int(w), int(h))
-        cr = cairo.Context(surface)
-        
-        # Draw background from frozen pixbuf
-        Gdk.cairo_set_source_pixbuf(cr, self.full_pixbuf, -x, -y)
-        cr.paint()
-        
-        # Draw annotations
-        for ann in self.annotations:
-            self._draw_annotation(cr, ann)
+        for key, desc in missing:
+            pkg_name = pkg_map[lookup_manager][key]
+            suggested_pkgs.add(pkg_name)
+            pkg_list_str.append(f'  \u2022 {desc}  ({pkg_name})')
             
-        path = os.path.expanduser("~/Pictures/Screenshot-" + GLib.DateTime.new_now_local().format("%Y%m%d-%H%M%S") + ".png")
-        surface.write_to_png(path)
+        pkg_names_str = ' '.join(sorted(suggested_pkgs))
         
-        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-        final_pixbuf = GdkPixbuf.Pixbuf.new_from_file(path)
-        clipboard.set_image(final_pixbuf)
-        clipboard.store()
-        
-        Gtk.main_quit()
+        if pkg_manager == "unknown":
+            msg = (_("The following dependencies are missing:\n\n{}\n\nPlease install them using your system's package manager.\n(Debian/Ubuntu package names shown as reference)")
+                   .format('\n'.join(pkg_list_str)))
+        else:
+            msg = (_("The following dependencies are missing:\n\n{}\n\nPlease install them using your package manager:\n  {} {}")
+                   .format('\n'.join(pkg_list_str), install_cmd, pkg_names_str))
+
+        dialog = Gtk.MessageDialog(
+            message_type=Gtk.MessageType.WARNING,
+            buttons=Gtk.ButtonsType.OK,
+            text=_("Mint Screenshot \u2014 Missing Dependencies")
+        )
+        dialog.format_secondary_text(msg)
+        dialog.set_keep_above(True)
+        dialog.run()
+        dialog.destroy()
+        return False
+
+    # Cache the result so we don't check again next time
+    config['deps_ok'] = True
+    try:
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        with open(config_path, 'w') as f:
+            json.dump(config, f, indent=2)
+    except Exception: pass
+    return True
+
+def _cleanup_tmp_files():
+    """Delete stale mint-screenshot-*.png temp files older than 1 hour."""
+    try:
+        import glob
+        import tempfile
+        now = time.time()
+        pattern = os.path.join(tempfile.gettempdir(), "mint-screenshot-*.png")
+        for f in glob.glob(pattern):
+            if os.path.exists(f) and now - os.path.getmtime(f) > 3600:
+                os.remove(f)
+    except Exception: pass
 
 if __name__ == "__main__":
-    path = sys.argv[1] if len(sys.argv) > 1 else None
-    overlay = ScreenshotOverlay(path)
-    Gtk.main()
+    # Set identification for the window manager (Cinnamon panel/taskbar)
+    from gi.repository import GLib
+    GLib.set_prgname("mint-screenshot-tool")
+    GLib.set_application_name(_("Mint Screenshot"))
+
+    # 1. Set Window Icon immediately so all windows (including dialogs) use it
+    from gi.repository import GdkPixbuf
+    
+    # Add assets folder to icon theme search path so "mint-screenshot" name works
+    icon_theme = Gtk.IconTheme.get_default()
+    assets_dir = os.path.join(APPLET_DIR, "assets")
+    if os.path.exists(assets_dir):
+        icon_theme.append_search_path(assets_dir)
+
+    icon_path = os.path.join(assets_dir, "mint-screenshot.png")
+    small_icon = os.path.join(APPLET_DIR, "icon.png")
+    
+    icons = []
+    try:
+        if os.path.exists(icon_path):
+            pb = GdkPixbuf.Pixbuf.new_from_file(icon_path)
+            # Include multiple sizes for the taskbar to choose from
+            icons.append(pb) # 1024x1024
+            icons.append(pb.scale_simple(64, 64, GdkPixbuf.InterpType.BILINEAR))
+            icons.append(pb.scale_simple(48, 48, GdkPixbuf.InterpType.BILINEAR))
+            icons.append(pb.scale_simple(32, 32, GdkPixbuf.InterpType.BILINEAR))
+    except Exception:
+        pass
+
+    if icons:
+        Gtk.Window.set_default_icon_list(icons)
+    
+    # Use the name that matches our asset filename (without extension)
+    Gtk.Window.set_default_icon_name("mint-screenshot")
+
+    _cleanup_tmp_files()
+    _check_dependencies()
+    
+
+    try:
+        # argv[1] is an optional save directory override passed by applet.js
+        save_dir = sys.argv[1] if len(sys.argv) > 1 else None
+        overlay = ScreenshotOverlay(save_dir_override=save_dir)
+        Gtk.main()
+    except Exception as e:
+        # If startup crashes, re-check deps in case something is missing
+        _check_dependencies(force=True)
+        raise

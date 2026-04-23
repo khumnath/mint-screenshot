@@ -1,0 +1,329 @@
+# Nepali translation for mint-screenshot.
+# Copyright (C) 2026 mint-screenshot contributors
+# This file is distributed under the same license as the mint-screenshot package.
+# Khumnath Bhandari, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: mint-screenshot\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-22 15:35+0545\n"
+"PO-Revision-Date: 2026-04-22 18:27+0545\n"
+"Last-Translator: Khumnath Bhandari\n"
+"Language-Team: Nepali\n"
+"Language: ne\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: app.py:51
+msgid "Reset Everything?"
+msgstr "सबै रिसेट गर्ने?"
+
+#: app.py:53
+msgid "This will clear all annotations and return to the launcher."
+msgstr "यसले सबै एनोटेसनहरू मेटाउनेछ र लन्चरमा फर्काउनेछ।"
+
+#: app.py:180
+msgid "Mint Screenshot — Wayland Error"
+msgstr "मिन्ट स्क्रिनसट — वेइल्याण्ड त्रुटि"
+
+#: canvas.py:444
+msgid "Edit Text:"
+msgstr "पाठ सम्पादन:"
+
+#: canvas.py:444
+msgid "Enter text to insert:"
+msgstr "घुसाउने पाठ लेख्नुहोस्:"
+
+#: capture.py:45
+msgid "D-Bus is required for Wayland support."
+msgstr "वेइल्याण्ड समर्थनका लागि D-Bus आवश्यक छ।"
+
+#: capture.py:163
+msgid ""
+"Failed to load captured screenshot:\n"
+"{}"
+msgstr ""
+"क्याप्चर गरिएको स्क्रिनसट लोड गर्न असफल:\n"
+"{}"
+
+#: editor.py:114
+msgid "Custom Timer"
+msgstr "आफ्नो टाइमर"
+
+#: editor.py:128
+msgid "Enter delay in seconds:"
+msgstr "सेकेन्डमा ढिलाइ लेख्नुहोस्:"
+
+#: editor.py:323 editor.py:739
+msgid "Saving..."
+msgstr "बचत गर्दै..."
+
+#: editor.py:425
+msgid "Pointer"
+msgstr "पोइन्टर"
+
+#: editor.py:426
+msgid "Rectangle"
+msgstr "आयत"
+
+#: editor.py:427
+msgid "Ellipse"
+msgstr "अण्डाकार"
+
+#: editor.py:428
+msgid "Arrow"
+msgstr "तीर"
+
+#: editor.py:429
+msgid "Draw"
+msgstr "कोर्नुहोस्"
+
+#: editor.py:430
+msgid "Highlight"
+msgstr "हाइलाइट"
+
+#: editor.py:431
+msgid "Text Tool"
+msgstr "लेख्ने टुल"
+
+#: editor.py:462
+msgid "Blue"
+msgstr "निलो"
+
+#: editor.py:463
+msgid "Red"
+msgstr "रातो"
+
+#: editor.py:464
+msgid "Green"
+msgstr "हरियो"
+
+#: editor.py:465
+msgid "Yellow"
+msgstr "पहेँलो"
+
+#: editor.py:466
+msgid "White"
+msgstr "सेतो"
+
+#: editor.py:467
+msgid "Black"
+msgstr "कालो"
+
+#: editor.py:495
+msgid "Size"
+msgstr "साइज"
+
+#: editor.py:508
+msgid "Reset All"
+msgstr "सबै रिसेट"
+
+#: editor.py:509
+msgid "Undo"
+msgstr "अन्डु"
+
+#: editor.py:510
+msgid "Copy"
+msgstr "कपी"
+
+#: editor.py:511
+msgid "Save"
+msgstr "बचत गर्नुहोस्"
+
+#: editor.py:512
+msgid "Settings"
+msgstr "सेटिङहरू"
+
+#: editor.py:513 launcher.py:133
+msgid "Close"
+msgstr "बन्द गर्नुहोस्"
+
+#: editor.py:552
+msgid "Save Format"
+msgstr "बचत गर्ने ढाँचा"
+
+#: editor.py:565
+msgid "Image Quality"
+msgstr "तस्विरको गुणस्तर"
+
+#: editor.py:570
+msgid "Space Saver (Small)"
+msgstr "ठाउँ बचत (सानो)"
+
+#: editor.py:572
+msgid "Medium"
+msgstr "मध्यम"
+
+#: editor.py:574
+msgid "Original"
+msgstr "मूल"
+
+#: editor.py:585
+msgid "Save Folder: {}..."
+msgstr "बचत फोल्डर: {}..."
+
+#: editor.py:590
+msgid "Show Toolbar Labels"
+msgstr "टुलबार लेबलहरू देखाउनुहोस्"
+
+#: editor.py:598
+msgid "About Mint Screenshot"
+msgstr "मिन्ट स्क्रिनसटको बारेमा"
+
+#: editor.py:619
+msgid "Select Default Save Folder"
+msgstr "पूर्वनिर्धारित बचत फोल्डर छान्नुहोस्"
+
+#: editor.py:623
+msgid "Select"
+msgstr "छान्नुहोस्"
+
+#: editor.py:648 launcher.py:68 scratch/dummy_strings.py:1
+msgid "Mint Screenshot"
+msgstr "मिन्ट स्क्रिनसट"
+
+#: editor.py:650
+msgid ""
+"Screenshot & Annotation Tool for Cinnamon\n"
+"Capture, annotate, and share with ease."
+msgstr ""
+"सिनामनका लागि स्क्रिनसट र एनोटेसन उपकरण\n"
+"सजिलै क्याप्चर, एनोटेट र साझा गर्नुहोस्।"
+
+#: editor.py:652
+msgid "Project on GitHub"
+msgstr "गिटहबमा परियोजना"
+
+#: editor.py:669
+msgid "Open External Website?"
+msgstr "बाह्य वेबसाइट खोल्ने?"
+
+#: editor.py:672
+msgid "This will exit the current screenshot process. Do you want to continue?"
+msgstr "यसले हालको स्क्रिनसट प्रक्रिया बन्द गर्नेछ। के तपाईं जारी राख्न चाहनुहुन्छ?"
+
+#: editor.py:715
+msgid "Save Screenshot"
+msgstr "स्क्रिनसट बचत गर्नुहोस्"
+
+#: editor.py:739
+msgid "Copying..."
+msgstr "कपी गर्दै..."
+
+#: editor.py:795
+msgid "Copied"
+msgstr "कपी भयो"
+
+#: editor.py:804
+msgid "Screenshot Saved"
+msgstr "स्क्रिनसट बचत भयो"
+
+#: editor.py:805
+msgid "Saved to {}"
+msgstr "{} मा बचत गरियो"
+
+#: launcher.py:72
+msgid "Wayland Mode — Capture via Desktop Portal"
+msgstr "वेइल्याण्ड मोड — डेस्कटप पोर्टल मार्फत क्याप्चर"
+
+#: launcher.py:72
+msgid "X11 Mode — Instant Pixel Capture"
+msgstr "X11 मोड — तुरुन्तै पिक्सेल क्याप्चर"
+
+#: launcher.py:81
+msgid "Hint: Pick 'Screen' in the portal to capture overlapping windows."
+msgstr "सुझाव: ओभरल्याप भएका विन्डोहरू क्याप्चर गर्न पोर्टलमा 'Screen' छान्नुहोस्।"
+
+#: launcher.py:94
+msgid "Select Monitor:"
+msgstr "मोनिटर छान्नुहोस्:"
+
+#: launcher.py:96
+msgid "All Monitors"
+msgstr "सबै मोनिटरहरू"
+
+#: launcher.py:98
+msgid "Monitor {}"
+msgstr "मोनिटर {}"
+
+#: launcher.py:104
+msgid "📸  Capture Fullscreen"
+msgstr "📸  पूरा स्क्रिन क्याप्चर"
+
+#: launcher.py:109
+msgid "✂️  Select Area"
+msgstr "✂️  क्षेत्र छान्नुहोस्"
+
+#: launcher.py:116
+msgid "⏱  Timed Capture"
+msgstr "⏱  समय सेट गरी क्याप्चर"
+
+#: launcher.py:123
+msgid "sec"
+msgstr "सेकेन्ड"
+
+#: main.py:112
+msgid ""
+"The following dependencies are missing:\n"
+"\n"
+"{}\n"
+"\n"
+"Please install them using your system's package manager.\n"
+"(Debian/Ubuntu package names shown as reference)"
+msgstr ""
+"निम्न निर्भरताहरू छैनन्:\n"
+"\n"
+"{}\n"
+"\n"
+"कृपया आफ्नो प्रणालीको प्याकेज म्यानेजर प्रयोग गरेर स्थापना गर्नुहोस्।\n"
+"(सन्दर्भका रूपमा Debian/Ubuntu प्याकेजका नामहरू देखाइएका छन्)"
+
+#: main.py:115
+msgid ""
+"The following dependencies are missing:\n"
+"\n"
+"{}\n"
+"\n"
+"Please install them using your package manager:\n"
+"  {} {}"
+msgstr ""
+"निम्न निर्भरताहरू छैनन्:\n"
+"\n"
+"{}\n"
+"\n"
+"कृपया आफ्नो प्याकेज म्यानेजर प्रयोग गरेर स्थापना गर्नुहोस्:\n"
+"  {} {}"
+
+#: main.py:121
+msgid "Mint Screenshot \\u2014 Missing Dependencies"
+msgstr "मिन्ट स्क्रिनसट \\u2014 निर्भरताहरू छैनन्"
+
+#: applet.js:18
+msgid "Mint Screenshot — Click to capture"
+msgstr "मिन्ट स्क्रिनसट — क्याप्चर गर्न क्लिक गर्नुहोस्"
+
+#: scratch/dummy_strings.py:2
+msgid ""
+"Screenshot & annotation tool for Cinnamon. Timed capture, region selection, "
+"and drawing tools."
+msgstr ""
+"सिनामनका लागि स्क्रिनसट र एनोटेसन उपकरण। समय सेट गरी क्याप्चर, क्षेत्र "
+"छनोट, र कोर्ने उपकरणहरू।"
+
+#: scratch/dummy_strings.py:3
+msgid ""
+"Capture, annotate, and share screenshots with ease. Supports timed capture, "
+"custom countdown, and Material Design toolbar."
+msgstr ""
+"सजिलै स्क्रिनसट क्याप्चर, एनोटेट र साझा गर्नुहोस्। समय सेट गरी क्याप्चर, "
+"आफ्नो काउन्टडाउन, र म्याटेरियल डिजाइन टुलबार समर्थित।"
+
+#: scratch/dummy_strings.py:4
+msgid "Default Save Directory"
+msgstr "पूर्वनिर्धारित बचत फोल्डर"
+
+#: scratch/dummy_strings.py:5
+msgid "Automatically copy to clipboard on save"
+msgstr "बचत गर्दा स्वचालित रूपमा क्लिपबोर्डमा कपी गर्नुहोस्"
