@@ -71,7 +71,7 @@ class CanvasMixin:
                 cr.set_font_size(20)
                 hint = "Click and Drag to select area"
                 ext = cr.text_extents(hint)
-                cr.move_to(allocation.width/2 - ext.width/2, 110)
+                cr.move_to(allocation.width/2 - ext.width/2, 180)
                 
                 # Blue outline for visibility on light backgrounds
                 cr.text_path(hint)

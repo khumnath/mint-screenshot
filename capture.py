@@ -28,7 +28,9 @@ class CaptureMixin:
             x, y, w, h = 0, 0, screen.get_width(), screen.get_height()
             
         # Grab the requested region
-        self.full_pixbuf = Gdk.pixbuf_get_from_window(window, x, y, w, h)
+        # Capture physical pixels (Logical * Scale)
+        ps = self.scale
+        self.full_pixbuf = Gdk.pixbuf_get_from_window(window, int(x * ps), int(y * ps), int(w * ps), int(h * ps))
         self._invalidate_bg_cache()
         
 

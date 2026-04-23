@@ -12,6 +12,7 @@ class EditorMixin:
     def _open_annotator(self):
         """Set up the fullscreen overlay for selection and annotation."""
         self.state = AppState.SELECTING if getattr(self, '_wants_selection', False) else AppState.ANNOTATING
+        self._toolbar_at_bottom = False
 
         # Borderless, always-on-top, fullscreen overlay
         self.set_decorated(False)
@@ -369,6 +370,20 @@ class EditorMixin:
         except Exception:
             pass
 
+    def _toggle_toolbar_position(self, btn):
+        """Snap the toolbar between the top and bottom of the screen."""
+        self._toolbar_at_bottom = not self._toolbar_at_bottom
+        if self._toolbar_at_bottom:
+            self.toolbar_box.set_valign(Gtk.Align.END)
+            self.toolbar_box.set_margin_top(0)
+            self.toolbar_box.set_margin_bottom(15)
+            btn.get_image().set_from_icon_name("pan-up-symbolic", Gtk.IconSize.BUTTON)
+        else:
+            self.toolbar_box.set_valign(Gtk.Align.START)
+            self.toolbar_box.set_margin_top(15)
+            self.toolbar_box.set_margin_bottom(0)
+            btn.get_image().set_from_icon_name("pan-down-symbolic", Gtk.IconSize.BUTTON)
+
     # --- Rendering ---
 
     def _show_toolbar(self):
@@ -454,6 +469,8 @@ class EditorMixin:
             
             btn.set_tooltip_text(label)
             btn.connect("toggled", lambda b, t=tool: self._set_tool_if_active(b, t))
+            # set cursor in toolbar buttons
+            btn.connect("realize", lambda b: b.get_window().set_cursor(Gdk.Cursor.new_from_name(Gdk.Display.get_default(), "pointer")))
             self.toolbar_box.add(btn)
             self.tool_buttons[tool] = btn
             if tool == self.current_tool: btn.set_active(True)
@@ -484,6 +501,8 @@ class EditorMixin:
             cbtn.set_image(Gtk.Image.new_from_pixbuf(pb))
             cbtn.set_tooltip_text(name)
             cbtn.connect("toggled", lambda b, color=(r,g,b): self._set_color_if_active(b, color))
+            # set cursor in color buttons
+            cbtn.connect("realize", lambda b: b.get_window().set_cursor(Gdk.Cursor.new_from_name(Gdk.Display.get_default(), "pointer")))
             
             col = i % 3
             row = i // 3
@@ -536,6 +555,16 @@ class EditorMixin:
             btn.set_tooltip_text(hint)
             btn.connect("clicked", func)
             self.toolbar_box.add(btn)
+
+        # Position Toggle Button (Snap to Top/Bottom)
+        self.toolbar_box.add(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+        pos_btn = Gtk.Button()
+        pos_btn.set_tooltip_text(_("Move Toolbar Top/Bottom"))
+        pos_btn.set_image(Gtk.Image.new_from_icon_name("pan-down-symbolic", Gtk.IconSize.BUTTON))
+        pos_btn.connect("clicked", self._toggle_toolbar_position)
+        # set cursor in position button
+        pos_btn.connect("realize", lambda b: b.get_window().set_cursor(Gdk.Cursor.new_from_name(Gdk.Display.get_default(), "pointer")))
+        self.toolbar_box.add(pos_btn)
 
         self.overlay.add_overlay(self.toolbar_box)
             
@@ -760,13 +789,12 @@ class EditorMixin:
             # 4. Cairo compositing — must stay on the main thread
             surface = cairo.ImageSurface(cairo.Format.ARGB32, int(w * s), int(h * s))
             cr = cairo.Context(surface)
-            cr.scale(s, s)
-
-            src_surface = Gdk.cairo_surface_create_from_pixbuf(full_pixbuf, s, window)
-            cr.set_source_surface(src_surface, -x, -y)
+            # Paint background at 1:1 physical pixels (no scaling yet)
+            Gdk.cairo_set_source_pixbuf(cr, full_pixbuf, -int(x * s), -int(y * s))
             cr.paint()
 
             cr.save()
+            cr.scale(s, s)
             cr.translate(-x, -y)
             for ann in annotations_copy:
                 self._draw_annotation(cr, ann, is_export=True)
@@ -789,7 +817,7 @@ class EditorMixin:
             # 6. Disk save (if not clipboard-only)
             if not only_clipboard:
                 if fmt_val == 'png':
-                    final_pixbuf.savev(save_path, "png", [], [])
+                    final_pixbuf.savev(save_path, "png", ["compression"], ["9"])
                 elif fmt_val == 'jpg':
                     final_pixbuf.savev(save_path, "jpeg", ["quality"], [quality_val])
                 elif fmt_val == 'gif':
