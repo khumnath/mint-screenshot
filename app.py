@@ -1,17 +1,15 @@
-import sys
 import os
 import json
-import gettext
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, Pango
+from gi.repository import Gtk, Gdk, Pango
 try:
     import dbus
     from dbus.mainloop.glib import DBusGMainLoop
 except ImportError:
     pass
 
-from config import AppState, IS_WAYLAND, HAS_DBUS, APP_ICON_PIXBUF, _
+from config import IS_WAYLAND, HAS_DBUS, APP_ICON_PIXBUF, _
 from utils import load_settings
 from launcher import LauncherMixin
 from capture import CaptureMixin
@@ -61,7 +59,15 @@ class ScreenshotOverlay(Gtk.Window, LauncherMixin, CaptureMixin, EditorMixin, Ca
             self.selection_start = None
             self.selection_end = None
             self.current_ann = None
+            self.selected_ann = None
+            self.hovered_ann = None
+            self.edit_mode = None
+            self.hovered_crop_handle = None
+            self.hovered_crop_outside = False
+            self._toolbar_at_bottom = False
             self.state = None
+            self.full_pixbuf = None
+            self._invalidate_bg_cache()
             self.hide()
             if self.toolbar_box: 
                 self.toolbar_box.hide()
@@ -93,7 +99,7 @@ class ScreenshotOverlay(Gtk.Window, LauncherMixin, CaptureMixin, EditorMixin, Ca
 
     def __init__(self, save_dir_override=None):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
-        self.set_wmclass("mint-screenshot-tool", "mint-screenshot-tool")
+        self.set_role("mint-screenshot-tool")
         if APP_ICON_PIXBUF:
             self.set_icon(APP_ICON_PIXBUF)
         else:
@@ -143,9 +149,9 @@ class ScreenshotOverlay(Gtk.Window, LauncherMixin, CaptureMixin, EditorMixin, Ca
         self.width = screen.get_width()
         self.height = screen.get_height()
 
-        # HiDPI scale factor
+        # HiDPI scale factor (initial; updated after realize for accuracy)
         self.scale = self.get_scale_factor()
-
+        self.connect("realize", lambda w: setattr(self, 'scale', self.get_scale_factor()))
 
         self._init_dbus()
 

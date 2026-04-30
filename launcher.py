@@ -9,8 +9,14 @@ class LauncherMixin:
 
     def _show_launcher(self):
         """Build the initial window where the user picks capture mode."""
+        # Destroy any previous launcher to prevent stale signal handlers
+        if hasattr(self, 'launcher') and self.launcher:
+            # Prevent the destroy signal from calling Gtk.main_quit during rebuild
+            self._rebuilding_launcher = True
+            self.launcher.destroy()
+            self._rebuilding_launcher = False
         self.launcher = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
-        self.launcher.set_wmclass("mint-screenshot-tool", "mint-screenshot-tool")
+        self.launcher.set_role("mint-screenshot-tool")
         if APP_ICON_PIXBUF:
             self.launcher.set_icon(APP_ICON_PIXBUF)
         else:
@@ -141,7 +147,7 @@ class LauncherMixin:
 
         self.launcher.add(vbox)
         self.launcher.connect("key-press-event", lambda w, e: Gtk.main_quit() if e.keyval == Gdk.KEY_Escape else None)
-        self.launcher.connect("destroy", lambda w: Gtk.main_quit())
+        self.launcher.connect("destroy", lambda w: Gtk.main_quit() if not getattr(self, '_rebuilding_launcher', False) else None)
         self.launcher.show_all()
 
     # --- Capture backends ---

@@ -4,6 +4,7 @@ gi.require_version('Gdk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
 import cairo
+import logging
 import math
 import os
 import json
@@ -36,9 +37,12 @@ def create_tool_icon(tool_type, size=24, color=(1, 1, 1), active=False):
             cr.set_source_rgb(*color)
             cr.mask_surface(icon_surface, 0, 0)
 
-            return Gdk.pixbuf_get_from_surface(surface, 0, 0, size, size)
+            result = Gdk.pixbuf_get_from_surface(surface, 0, 0, size, size)
+            icon_surface.finish()
+            surface.finish()
+            return result
         except Exception as e:
-            print(f"Warning: couldn't load icon '{tool_type}': {e}")
+            logging.getLogger(__name__).debug("Couldn't load icon '%s': %s", tool_type, e)
 
     # Fallback: plain circle dot
     cr.scale(size, size)
@@ -48,7 +52,9 @@ def create_tool_icon(tool_type, size=24, color=(1, 1, 1), active=False):
     cr.arc(0.5, 0.5, 0.15, 0, 2 * math.pi)
     cr.fill()
 
-    return Gdk.pixbuf_get_from_surface(surface, 0, 0, size, size)
+    result = Gdk.pixbuf_get_from_surface(surface, 0, 0, size, size)
+    surface.finish()
+    return result
 
 
 def create_color_icon(r, g, b, size=24):
@@ -63,7 +69,9 @@ def create_color_icon(r, g, b, size=24):
     cr.set_source_rgb(1, 1, 1)
     cr.set_line_width(1)
     cr.stroke()
-    return Gdk.pixbuf_get_from_surface(surface, 0, 0, size, size)
+    result = Gdk.pixbuf_get_from_surface(surface, 0, 0, size, size)
+    surface.finish()
+    return result
 
 
 def load_settings(defaults):

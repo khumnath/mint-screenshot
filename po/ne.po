@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: mint-screenshot\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-23 08:26+0545\n"
+"Report-Msgid-Bugs-To: khumnath@gmail.com\n"
+"POT-Creation-Date: 2026-04-23 19:12+0545\n"
 "PO-Revision-Date: 2026-04-22 18:27+0545\n"
 "Last-Translator: Khumnath Bhandari\n"
 "Language-Team: Nepali\n"
@@ -16,31 +16,31 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: app.py:51
+#: app.py:49
 msgid "Reset Everything?"
 msgstr "सबै रिसेट गर्ने?"
 
-#: app.py:53
+#: app.py:51
 msgid "This will clear all annotations and return to the launcher."
 msgstr "यसले सबै एनोटेसनहरू मेटाउनेछ र लन्चरमा फर्काउनेछ।"
 
-#: app.py:185
+#: app.py:191
 msgid "Mint Screenshot — Wayland Error"
 msgstr "मिन्ट स्क्रिनसट — वेइल्याण्ड त्रुटि"
 
-#: canvas.py:444
+#: canvas.py:461
 msgid "Edit Text:"
 msgstr "पाठ सम्पादन:"
 
-#: canvas.py:444
+#: canvas.py:461
 msgid "Enter text to insert:"
 msgstr "घुसाउने पाठ लेख्नुहोस्:"
 
-#: capture.py:45
+#: capture.py:53
 msgid "D-Bus is required for Wayland support."
 msgstr "वेइल्याण्ड समर्थनका लागि D-Bus आवश्यक छ।"
 
-#: capture.py:163
+#: capture.py:171
 msgid ""
 "Failed to load captured screenshot:\n"
 "{}"
@@ -48,143 +48,147 @@ msgstr ""
 "क्याप्चर गरिएको स्क्रिनसट लोड गर्न असफल:\n"
 "{}"
 
-#: editor.py:114
+#: editor.py:119
 msgid "Custom Timer"
 msgstr "आफ्नो टाइमर"
 
-#: editor.py:128
+#: editor.py:133
 msgid "Enter delay in seconds:"
 msgstr "सेकेन्डमा ढिलाइ लेख्नुहोस्:"
 
-#: editor.py:327 editor.py:748
+#: editor.py:338 editor.py:795
 msgid "Saving..."
 msgstr "बचत गर्दै..."
 
-#: editor.py:429
+#: editor.py:455
 msgid "Pointer"
 msgstr "पोइन्टर"
 
-#: editor.py:430
+#: editor.py:456
 msgid "Rectangle"
 msgstr "आयत"
 
-#: editor.py:431
+#: editor.py:457
 msgid "Ellipse"
 msgstr "अण्डाकार"
 
-#: editor.py:432
+#: editor.py:458
 msgid "Arrow"
 msgstr "तीर"
 
-#: editor.py:433
+#: editor.py:459
 msgid "Draw"
 msgstr "कोर्नुहोस्"
 
-#: editor.py:434
+#: editor.py:460
 msgid "Highlight"
 msgstr "हाइलाइट"
 
-#: editor.py:435
+#: editor.py:461
 msgid "Text Tool"
 msgstr "लेख्ने टुल"
 
-#: editor.py:466
+#: editor.py:494
 msgid "Blue"
 msgstr "निलो"
 
-#: editor.py:467
+#: editor.py:495
 msgid "Red"
 msgstr "रातो"
 
-#: editor.py:468
+#: editor.py:496
 msgid "Green"
 msgstr "हरियो"
 
-#: editor.py:469
+#: editor.py:497
 msgid "Yellow"
 msgstr "पहेँलो"
 
-#: editor.py:470
+#: editor.py:498
 msgid "White"
 msgstr "सेतो"
 
-#: editor.py:471
+#: editor.py:499
 msgid "Black"
 msgstr "कालो"
 
-#: editor.py:499
+#: editor.py:529
 msgid "Size"
 msgstr "साइज"
 
-#: editor.py:512
+#: editor.py:542
 msgid "Reset All"
 msgstr "सबै रिसेट"
 
-#: editor.py:513
+#: editor.py:543
 msgid "Undo"
 msgstr "अन्डु"
 
-#: editor.py:514
+#: editor.py:544
 msgid "Copy"
 msgstr "कपी"
 
-#: editor.py:515
+#: editor.py:545
 msgid "Save"
 msgstr "बचत गर्नुहोस्"
 
-#: editor.py:516
+#: editor.py:546
 msgid "Settings"
 msgstr "सेटिङहरू"
 
-#: editor.py:517 launcher.py:138
+#: editor.py:547 launcher.py:144
 msgid "Close"
 msgstr "बन्द गर्नुहोस्"
 
-#: editor.py:556
+#: editor.py:573
+msgid "Move Toolbar Top/Bottom"
+msgstr "उपकरणपट्टी माथि/तल सार्नुहोस्"
+
+#: editor.py:596
 msgid "Save Format"
 msgstr "बचत गर्ने ढाँचा"
 
-#: editor.py:569
+#: editor.py:609
 msgid "Image Quality"
 msgstr "तस्विरको गुणस्तर"
 
-#: editor.py:574
+#: editor.py:614
 msgid "Space Saver (Small)"
 msgstr "ठाउँ बचत (सानो)"
 
-#: editor.py:576
+#: editor.py:616
 msgid "Medium"
 msgstr "मध्यम"
 
-#: editor.py:578
+#: editor.py:618
 msgid "Original"
 msgstr "मूल"
 
-#: editor.py:589
+#: editor.py:629
 msgid "Save Folder: {}..."
 msgstr "बचत फोल्डर: {}..."
 
-#: editor.py:594
+#: editor.py:634
 msgid "Show Toolbar Labels"
 msgstr "टुलबार लेबलहरू देखाउनुहोस्"
 
-#: editor.py:602
+#: editor.py:642
 msgid "About Mint Screenshot"
 msgstr "मिन्ट स्क्रिनसटको बारेमा"
 
-#: editor.py:623
+#: editor.py:663
 msgid "Select Default Save Folder"
 msgstr "पूर्वनिर्धारित बचत फोल्डर छान्नुहोस्"
 
-#: editor.py:627
+#: editor.py:667
 msgid "Select"
 msgstr "छान्नुहोस्"
 
-#: editor.py:652 launcher.py:73 main.py:159
+#: editor.py:692 launcher.py:79 main.py:159
 msgid "Mint Screenshot"
 msgstr "मिन्ट स्क्रिनसट"
 
-#: editor.py:654
+#: editor.py:694
 msgid ""
 "Screenshot & Annotation Tool\n"
 "Capture, annotate, and share with ease."
@@ -192,75 +196,75 @@ msgstr ""
 "स्क्रिनसट र एनोटेसन उपकरण\n"
 "सजिलै क्याप्चर, एनोटेट र साझा गर्नुहोस्।"
 
-#: editor.py:656
+#: editor.py:696
 msgid "Project on GitHub"
 msgstr "गिटहबमा परियोजना"
 
-#: editor.py:678
+#: editor.py:718
 msgid "Open External Website?"
 msgstr "बाह्य वेबसाइट खोल्ने?"
 
-#: editor.py:681
+#: editor.py:721
 msgid "This will exit the current screenshot process. Do you want to continue?"
 msgstr "यसले हालको स्क्रिनसट प्रक्रिया बन्द गर्नेछ। के तपाईं जारी राख्न चाहनुहुन्छ?"
 
-#: editor.py:724
+#: editor.py:765
 msgid "Save Screenshot"
 msgstr "स्क्रिनसट बचत गर्नुहोस्"
 
-#: editor.py:748
+#: editor.py:795
 msgid "Copying..."
 msgstr "कपी गर्दै..."
 
-#: editor.py:804
+#: editor.py:855
 msgid "Copied"
 msgstr "कपी भयो"
 
-#: editor.py:813
+#: editor.py:864
 msgid "Screenshot Saved"
 msgstr "स्क्रिनसट बचत भयो"
 
-#: editor.py:814
+#: editor.py:865
 msgid "Saved to {}"
 msgstr "{} मा बचत गरियो"
 
-#: launcher.py:77
+#: launcher.py:83
 msgid "Wayland Mode — Capture via Desktop Portal"
 msgstr "वेइल्याण्ड मोड — डेस्कटप पोर्टल मार्फत क्याप्चर"
 
-#: launcher.py:77
+#: launcher.py:83
 msgid "X11 Mode — Instant Pixel Capture"
 msgstr "X11 मोड — तुरुन्तै पिक्सेल क्याप्चर"
 
-#: launcher.py:86
+#: launcher.py:92
 msgid "Hint: Pick 'Screen' in the portal to capture overlapping windows."
 msgstr "सुझाव: ओभरल्याप भएका विन्डोहरू क्याप्चर गर्न पोर्टलमा 'Screen' छान्नुहोस्।"
 
-#: launcher.py:99
+#: launcher.py:105
 msgid "Select Monitor:"
 msgstr "मोनिटर छान्नुहोस्:"
 
-#: launcher.py:101
+#: launcher.py:107
 msgid "All Monitors"
 msgstr "सबै मोनिटरहरू"
 
-#: launcher.py:103
+#: launcher.py:109
 msgid "Monitor {}"
 msgstr "मोनिटर {}"
 
-#: launcher.py:109
+#: launcher.py:115
 msgid "📸  Capture Fullscreen"
 msgstr "📸  पूरा स्क्रिन क्याप्चर"
 
-#: launcher.py:114
+#: launcher.py:120
 msgid "✂️  Select Area"
 msgstr "✂️  क्षेत्र छान्नुहोस्"
 
-#: launcher.py:121
+#: launcher.py:127
 msgid "⏱  Timed Capture"
 msgstr "⏱  समय सेट गरी क्याप्चर"
 
-#: launcher.py:128
+#: launcher.py:134
 msgid "sec"
 msgstr "सेकेन्ड"
 
@@ -300,9 +304,8 @@ msgstr ""
 msgid "Mint Screenshot \\u2014 Missing Dependencies"
 msgstr "मिन्ट स्क्रिनसट \\u2014 निर्भरताहरू छैनन्"
 
-#: applet.js:18
-msgid "Mint Screenshot — Click to capture"
-msgstr "मिन्ट स्क्रिनसट — क्याप्चर गर्न क्लिक गर्नुहोस्"
+#~ msgid "Mint Screenshot — Click to capture"
+#~ msgstr "मिन्ट स्क्रिनसट — क्याप्चर गर्न क्लिक गर्नुहोस्"
 
 #~ msgid ""
 #~ "Screenshot & annotation tool for Cinnamon. Timed capture, region "

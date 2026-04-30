@@ -1,6 +1,7 @@
 import math
 import gi
 gi.require_version('Gtk', '3.0')
+gi.require_version('PangoCairo', '1.0')
 from gi.repository import Gtk, Gdk, Pango, PangoCairo
 import cairo
 from annotations import Annotation
@@ -22,6 +23,9 @@ class CanvasMixin:
 
     def _invalidate_bg_cache(self):
         """Call whenever full_pixbuf changes to force a surface rebuild."""
+        old = getattr(self, '_bg_surface', None)
+        if old is not None:
+            old.finish()
         self._bg_surface = None
 
     def _get_bg_surface(self):
@@ -230,13 +234,13 @@ class CanvasMixin:
     # --- Context toolbar (per-annotation floating buttons) ---
 
     def _draw_context_toolbar(self, cr, ann):
-        """Draw the small Resize/Rotate/Edit toolbar above a selected annotation."""
+        """Draw the small Resize/Rotate/Delete/Edit toolbar above a selected annotation."""
         ax, ay, aw, ah = self._get_rect(ann.start, ann.end, force_square=False, ann=ann)
         cx = ax + aw/2
         ty = ay - 42
         
         is_text = (ann.type == 'text')
-        n_buttons = 3 if is_text else 2
+        n_buttons = 4 if is_text else 3
         btn_spacing = 24
         width = n_buttons * btn_spacing + 16
         icon_size = 16
@@ -258,13 +262,17 @@ class CanvasMixin:
         # Tool icons
         icon_y = ty + 14
         if is_text:
-            # 3 buttons: resize, edit, rotate
-            self._draw_mini_icon(cr, cx - btn_spacing, icon_y, 'resize', self.edit_mode == 'resize', icon_size)
-            self._draw_mini_icon(cr, cx, icon_y, 'edit', self.edit_mode == 'edit', icon_size)
-            self._draw_mini_icon(cr, cx + btn_spacing, icon_y, 'rotate', self.edit_mode == 'rotate', icon_size)
+            # 4 buttons: resize, edit, delete, rotate
+            half = btn_spacing * 1.5
+            self._draw_mini_icon(cr, cx - half, icon_y, 'resize', self.edit_mode == 'resize', icon_size)
+            self._draw_mini_icon(cr, cx - btn_spacing/2, icon_y, 'edit', self.edit_mode == 'edit', icon_size)
+            self._draw_mini_icon(cr, cx + btn_spacing/2, icon_y, 'delete', False, icon_size)
+            self._draw_mini_icon(cr, cx + half, icon_y, 'rotate', self.edit_mode == 'rotate', icon_size)
         else:
-            self._draw_mini_icon(cr, cx - btn_spacing/2, icon_y, 'resize', self.edit_mode == 'resize', icon_size)
-            self._draw_mini_icon(cr, cx + btn_spacing/2, icon_y, 'rotate', self.edit_mode == 'rotate', icon_size)
+            # 3 buttons: resize, delete, rotate
+            self._draw_mini_icon(cr, cx - btn_spacing, icon_y, 'resize', self.edit_mode == 'resize', icon_size)
+            self._draw_mini_icon(cr, cx, icon_y, 'delete', False, icon_size)
+            self._draw_mini_icon(cr, cx + btn_spacing, icon_y, 'rotate', self.edit_mode == 'rotate', icon_size)
         cr.restore()
 
     def _draw_mini_icon(self, cr, x, y, type, active, size=20):
@@ -284,13 +292,17 @@ class CanvasMixin:
         if ty <= y <= ty + 28:
             is_text = (ann.type == 'text')
             if is_text:
-                # 3 buttons: resize, edit, rotate
-                if abs(x - (cx - btn_spacing)) <= 12: return 'resize'
-                if abs(x - cx) <= 12: return 'edit'
-                if abs(x - (cx + btn_spacing)) <= 12: return 'rotate'
+                # 4 buttons: resize, edit, delete, rotate
+                half = btn_spacing * 1.5
+                if abs(x - (cx - half)) <= 12: return 'resize'
+                if abs(x - (cx - btn_spacing/2)) <= 12: return 'edit'
+                if abs(x - (cx + btn_spacing/2)) <= 12: return 'delete'
+                if abs(x - (cx + half)) <= 12: return 'rotate'
             else:
-                if abs(x - (cx - btn_spacing/2)) <= 12: return 'resize'
-                if abs(x - (cx + btn_spacing/2)) <= 12: return 'rotate'
+                # 3 buttons: resize, delete, rotate
+                if abs(x - (cx - btn_spacing)) <= 12: return 'resize'
+                if abs(x - cx) <= 12: return 'delete'
+                if abs(x - (cx + btn_spacing)) <= 12: return 'rotate'
         return None
 
     # --- Annotation rendering ---
@@ -371,10 +383,15 @@ class CanvasMixin:
                     cr.stroke()
             elif ann.type == 'text':
                 if hasattr(ann, 'text'):
-                    layout = self.create_pango_layout(ann.text)
-                    font_size = 10 + (ann.width * 3)
-                    font = Pango.FontDescription(f"Sans Bold {font_size}")
-                    layout.set_font_description(font)
+                    # Cache layout on the annotation to avoid recreating every draw
+                    cache_key = (ann.text, ann.width)
+                    if getattr(ann, '_layout_cache_key', None) != cache_key:
+                        ann._cached_layout = self.create_pango_layout(ann.text)
+                        font_size = 10 + (ann.width * 3)
+                        font = Pango.FontDescription(f"Sans Bold {font_size}")
+                        ann._cached_layout.set_font_description(font)
+                        ann._layout_cache_key = cache_key
+                    layout = ann._cached_layout
                     # Scale text to fit the bounding box if it's been resized
                     nat_w, nat_h = layout.get_pixel_size()
                     if nat_w > 0 and nat_h > 0 and aw > 0 and ah > 0:
@@ -452,7 +469,7 @@ class CanvasMixin:
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             text = entry.get_text()
-            if text:
+            if text.strip():
                 if ann:
                     ann.text = text
                     self._update_text_bounds(ann)
@@ -500,11 +517,17 @@ class CanvasMixin:
                 self.crop_drag_start_pos = (event.x, event.y)
                 return
                 
-            # Check context toolbar buttons (resize/rotate/edit)
+            # Check context toolbar buttons (resize/rotate/edit/delete)
             if self.selected_ann:
                 btn = self._get_context_btn_at(self.selected_ann, event.x, event.y)
                 if btn:
-                    if btn == 'edit' and self.selected_ann.type == 'text':
+                    if btn == 'delete':
+                        if self.selected_ann in self.annotations:
+                            self.annotations.remove(self.selected_ann)
+                        self.selected_ann = None
+                        self.queue_draw()
+                        return
+                    elif btn == 'edit' and self.selected_ann.type == 'text':
                         self._prompt_text(event.x, event.y, ann=self.selected_ann)
                     elif btn == 'resize':
                         self.active_handle = 'resize_icon'
@@ -798,6 +821,11 @@ class CanvasMixin:
 
         if event.keyval == Gdk.KEY_Escape:
             Gtk.main_quit()
+        elif event.keyval == Gdk.KEY_Delete:
+            if self.selected_ann and self.selected_ann in self.annotations:
+                self.annotations.remove(self.selected_ann)
+                self.selected_ann = None
+                self.queue_draw()
         elif ctrl and not shift and event.keyval == Gdk.KEY_z:
             self._undo()
         elif ctrl and (event.keyval == Gdk.KEY_y or (shift and event.keyval == Gdk.KEY_z)):

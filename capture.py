@@ -1,3 +1,4 @@
+import logging
 import os
 import secrets
 import tempfile
@@ -32,7 +33,12 @@ class CaptureMixin:
         ps = self.scale
         self.full_pixbuf = Gdk.pixbuf_get_from_window(window, int(x * ps), int(y * ps), int(w * ps), int(h * ps))
         self._invalidate_bg_cache()
-        
+
+        if self.full_pixbuf is None:
+            logging.getLogger(__name__).error("Failed to capture screen (pixbuf is None)")
+            if hasattr(self, 'launcher') and self.launcher:
+                self.launcher.show()
+            return False
 
         self.width = w
         self.height = h

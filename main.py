@@ -174,11 +174,9 @@ if __name__ == "__main__":
     try:
         if os.path.exists(icon_path):
             pb = GdkPixbuf.Pixbuf.new_from_file(icon_path)
-            # Include multiple sizes for the taskbar to choose from
-            icons.append(pb) # 1024x1024
-            icons.append(pb.scale_simple(64, 64, GdkPixbuf.InterpType.BILINEAR))
-            icons.append(pb.scale_simple(48, 48, GdkPixbuf.InterpType.BILINEAR))
-            icons.append(pb.scale_simple(32, 32, GdkPixbuf.InterpType.BILINEAR))
+            # Only keep the sizes GTK actually uses — no need for the full 1024x1024
+            for size in [64, 48, 32]:
+                icons.append(pb.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR))
     except Exception:
         pass
 

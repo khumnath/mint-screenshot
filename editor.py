@@ -1,12 +1,17 @@
 import os
+import logging
 import math
+import subprocess
+import sys
 import time
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf, GLib, Pango
+from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 import cairo
 from config import AppState, APP_ICON_PIXBUF, _
 from utils import create_tool_icon, create_color_icon, save_settings
+
+logger = logging.getLogger(__name__)
 
 class EditorMixin:
     def _open_annotator(self):
@@ -52,8 +57,7 @@ class EditorMixin:
         self.add(self.overlay)
         
         # Main canvas — receives all mouse events
-        self.draw_area = Gtk.EventBox()
-        self.draw_area.set_app_paintable(True)
+        self.draw_area = Gtk.DrawingArea()
         self.draw_area.connect("draw", self.on_draw)
         self.overlay.add(self.draw_area)
 
@@ -263,12 +267,18 @@ class EditorMixin:
 
         # X11: capture the full root window for timed screenshots
         window = Gdk.get_default_root_window()
-        w, h = window.get_width(), window.get_height()
-        self.full_pixbuf = Gdk.pixbuf_get_from_window(window, 0, 0, w, h)
+        screen = Gdk.Screen.get_default()
+        ps = self.scale
+        w, h = screen.get_width(), screen.get_height()
+        self.full_pixbuf = Gdk.pixbuf_get_from_window(window, 0, 0, int(w * ps), int(h * ps))
         self._invalidate_bg_cache()
+
+        if self.full_pixbuf is None:
+            logger.error("Failed to capture screen (pixbuf is None). Is the screen locked?")
+            return False
         
-        self.width = w / self.scale
-        self.height = h / self.scale
+        self.width = w
+        self.height = h
         self.rect = (0, 0, self.width, self.height)
         self.is_full_capture = True
         
@@ -365,10 +375,11 @@ class EditorMixin:
     def _send_notification(self, title, message):
         """Send a system-wide desktop notification."""
         try:
-            import subprocess
             subprocess.Popen(['notify-send', '-i', 'applets-screenshooter-symbolic', title, message])
+        except FileNotFoundError:
+            logger.debug("notify-send not found; skipping desktop notification")
         except Exception:
-            pass
+            logger.debug("Failed to send notification", exc_info=True)
 
     def _toggle_toolbar_position(self, btn):
         """Snap the toolbar between the top and bottom of the screen."""
@@ -500,9 +511,9 @@ class EditorMixin:
             pb = create_color_icon(r, g, b, size=color_px - 4)
             cbtn.set_image(Gtk.Image.new_from_pixbuf(pb))
             cbtn.set_tooltip_text(name)
-            cbtn.connect("toggled", lambda b, color=(r,g,b): self._set_color_if_active(b, color))
+            cbtn.connect("toggled", lambda btn, color=(r,g,b): self._set_color_if_active(btn, color))
             # set cursor in color buttons
-            cbtn.connect("realize", lambda b: b.get_window().set_cursor(Gdk.Cursor.new_from_name(Gdk.Display.get_default(), "pointer")))
+            cbtn.connect("realize", lambda btn: btn.get_window().set_cursor(Gdk.Cursor.new_from_name(Gdk.Display.get_default(), "pointer")))
             
             col = i % 3
             row = i // 3
@@ -713,7 +724,6 @@ class EditorMixin:
             confirm.destroy()
             
             if response == Gtk.ResponseType.YES:
-                import subprocess, sys
                 subprocess.Popen(['xdg-open', uri])
                 sys.exit(0)
             else:
@@ -728,10 +738,12 @@ class EditorMixin:
 
     def _save_screenshot(self, show_dialog=False, only_clipboard=False):
         """Composite annotations over the capture, then save to disk or clipboard."""
-        if self.state == AppState.SELECTING or not getattr(self, 'rect', None):
+        if self.state == AppState.SELECTING or not getattr(self, 'rect', None) or not self.full_pixbuf:
             return
             
         x, y, w, h = self.rect
+        w = max(w, 1)
+        h = max(h, 1)
         s = self.scale
         
         # Grab window reference before hiding
@@ -770,7 +782,13 @@ class EditorMixin:
                     return
             else:
                 folder = self.settings['save_path']
-                if not os.path.exists(folder): os.makedirs(folder)
+                try:
+                    os.makedirs(folder, exist_ok=True)
+                except OSError as e:
+                    logger.error("Failed to create save directory %s: %s", folder, e)
+                    self.show_all()
+                    if self.toolbar_box: self.toolbar_box.show_all()
+                    return
                 save_path = os.path.join(folder, filename)
 
         # 3. Show feedback pill immediately
@@ -801,6 +819,8 @@ class EditorMixin:
             cr.restore()
 
             pixbuf = Gdk.pixbuf_get_from_surface(surface, 0, 0, int(w * s), int(h * s))
+            # Release native cairo memory immediately
+            surface.finish()
 
             # 5. Apply Quality / Scaling settings
             final_pixbuf = pixbuf
@@ -823,7 +843,10 @@ class EditorMixin:
                 elif fmt_val == 'gif':
                     final_pixbuf.savev(save_path, "gif", [], [])
 
-            # 7. Finalize
+            # 7. Finalize — release large pixbuf from memory
+            self.full_pixbuf = None
+            self._invalidate_bg_cache()
+
             if only_clipboard:
                 clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
                 clipboard.set_image(final_pixbuf)

@@ -7,10 +7,8 @@ import gi
 
 
 gi.require_version('Gtk', '3.0')
-gi.require_version('PangoCairo', '1.0')
 
-from gi.repository import Gtk, Gdk, GdkPixbuf, GLib, Pango, PangoCairo, Gio
-import cairo
+from gi.repository import Gtk, Gdk, GdkPixbuf
 
 # --- Display server detection ---
 IS_WAYLAND = os.environ.get('XDG_SESSION_TYPE', 'x11').lower() == 'wayland'
