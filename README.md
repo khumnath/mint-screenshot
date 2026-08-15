@@ -87,7 +87,8 @@ graph LR
 ## 🌟 Key Features
 
 - **Cross-Platform Compatibility**: Fully supports both **X11** and **Wayland** (via `xdg-desktop-portal`).
-- **Multiple Capture Modes**: Fullscreen, interactive region selection, and custom timed captures.
+  - *Note on Wayland:* Interactive "Select Window" mode is currently disabled on Wayland because its strict security architecture intentionally blocks third-party apps from reading window locations. Wayland users can continue to use "Select Area" or Fullscreen modes seamlessly.
+- **Multiple Capture Modes**: Fullscreen, interactive region selection, custom timed captures, and window selection (X11 only).
 - **Rich Annotation Suite**:
   - **Precision Shapes**: Rectangles, Ellipses, and Arrows with adjustable thickness.
   - **Creative Tools**: Freehand drawing and highlighting.
